@@ -57,13 +57,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	// TODO: Configure server address
-	// struct sockaddr_in server_addr;
-	// server_addr.sin_family = AF_INET;
-	// server_addr.sin_port = htons(SERVER_PORT);
-	// server_addr.sin_addr.s_addr = INADDR_ANY;
+	struct sockaddr_in server_addr;
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(SERVER_PORT);
+	server_addr.sin_addr.s_addr = INADDR_ANY;
 
 	// TODO: Bind socket
-	// bind(...);
+	if (bind(my_socket, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+		printf("errore nel binding del socket\n");
+		closesocket(my_socket);
+		clearwinsock();
+		return -1;
+	}
 
 	// TODO: Set socket to listen
 	// listen(...);
