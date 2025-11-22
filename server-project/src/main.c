@@ -218,7 +218,7 @@ float typecheck(char type){
 			get_pressure();
 			break;
 		default:
-			printf("Tipo non valido");
+			printf("Richiesta non valida");
 			return 2;
 	}
 	return 0;
