@@ -8,30 +8,36 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
-// Parametri condivisi dell'applicazione (valori di default)
-// Queste definizioni vengono usate sia dal client che dal server
-#define DEFAULT_SERVER_PORT 57015
-#define DEFAULT_SERVER_IP "192.168.1.105"
-#define BUFFERSIZE 512    // Buffer size for messages
+// Unified shared constants (mirrors server header)
+#define SERVER_PORT 57015
+#define SERVER_IP   "127.0.0.1"
+#define BUFFER_SIZE 512
 
+// Status codes (shared)
+#define STATUS_SUCCESS            0u
+#define STATUS_CITY_NOT_AVAILABLE 1u
+#define STATUS_INVALID_REQUEST    2u
+
+// Request (client -> server)
 typedef struct {
-    char type;        // 't', 'h', 'w', 'p'
-    char city[64];    // null-terminated city name
+    char type;      // 't','h','w','p'
+    char city[64];  // null-terminated city name
 } weather_request_t;
 
+// Unified response (server -> client)
 typedef struct {
-    unsigned int status; // 0 success, 1 city not available, 2 invalid request
-    char type;           // echo of request type
-    float value;         // weather value
+    unsigned int status; // STATUS_* values
+    char type;           // echo of request type (or '\0' on error)
+    float value;         // weather value (0.0 if error)
 } weather_response_t;
 
-// Status codes
-#define STATUS_SUCCESS 0
-#define STATUS_CITY_NOT_AVAILABLE 1
-#define STATUS_INVALID_REQUEST 2
+// Server-side prototypes (not used by client directly, included for symmetry)
+int handleclientconnection(int client_socket, const char *client_ip);
+float typecheck(char type);
+char citycheck(const char *city);
+weather_response_t build_weather_response(char type, const char *city);
 
-// Prototipi delle funzioni di generazione dati usate dal server
-
+// Data generation functions (shared)
 float get_temperature(void); // -10.0 .. 40.0
 float get_humidity(void);    // 20.0 .. 100.0
 float get_wind(void);        // 0.0 .. 100.0

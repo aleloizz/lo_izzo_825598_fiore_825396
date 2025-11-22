@@ -160,8 +160,8 @@ static float ntohf(uint32_t i)
 
 int main(int argc, char *argv[])
 {
-    const char *server = DEFAULT_SERVER_IP;
-    int port = DEFAULT_SERVER_PORT;
+    const char *server = SERVER_IP; // unified constant from protocol.h
+    int port = SERVER_PORT;         // unified constant from protocol.h
     const char *request = NULL;
 
     /*

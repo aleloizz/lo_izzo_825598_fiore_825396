@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(SERVER_PORT);
-	server_addr.sin_addr.s_addr = inet_addr("192.168.1.105");
+	server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
 	// socket binding
 	if (bind(my_socket, (struct sockaddr*) &server_addr, sizeof(server_addr)) <0) {
@@ -168,20 +168,20 @@ int handleclientconnection(int client_socket, const char *client_ip) {
 	}
 	printf("Richiesta '%c %s' dal client ip %s\n", req_type ? req_type : '-', city[0] ? city : "(vuota)", client_ip);
 
-	// Validazione e costruzione risposta
+	// Validazione e costruzione risposta (unificata)
 	char type_lower = tolower((unsigned char)req_type);
 	if (!(type_lower == 't' || type_lower == 'h' || type_lower == 'w' || type_lower == 'p')) {
 		type_lower = '\0';
 	}
-	risposta_meteo_t r = build_weather_response(type_lower, city);
+	weather_response_t r = build_weather_response(type_lower, city);
 
-	// Serializzazione binaria risposta: 4 byte stato (network), 1 byte tipo, 4 byte float (network bit pattern)
+	// Serializzazione binaria risposta: 4 byte status (network), 1 byte type, 4 byte float (network bit pattern)
 	unsigned char respbuf[9];
-	uint32_t net_status = htonl(r.stato);
+	uint32_t net_status = htonl(r.status);
 	memcpy(respbuf, &net_status, 4);
-	respbuf[4] = (r.stato == 0) ? r.tipo : '\0';
+	respbuf[4] = (r.status == STATUS_SUCCESS) ? r.type : '\0';
 	uint32_t fbits;
-	memcpy(&fbits, &r.valore, sizeof(fbits));
+	memcpy(&fbits, &r.value, sizeof(fbits));
 	fbits = htonl(fbits);
 	memcpy(&respbuf[5], &fbits, 4);
 
@@ -246,23 +246,23 @@ char citycheck(const char *city) {
 }
 
 // Funzione che combina validazione e generazione valore secondo specifica.
-risposta_meteo_t build_weather_response(char type, const char *city) {
-	risposta_meteo_t r;
-	r.stato = 0;
-	r.tipo = '\0';
-	r.valore = 0.0f;
+weather_response_t build_weather_response(char type, const char *city) {
+	weather_response_t r;
+	r.status = STATUS_SUCCESS;
+	r.type = '\0';
+	r.value = 0.0f;
 
 	// Validazione type
 	if (type == '\0' || typecheck(type) != 0) {
 		// Richiesta non valida (tipo errato)
-		r.stato = 2;
+		r.status = STATUS_INVALID_REQUEST;
 		return r;
 	}
 
 	// Validazione city
 	if (city == NULL || *city == '\0' || citycheck(city) != 0) {
 		// Città non disponibile
-		r.stato = 1;
+		r.status = STATUS_CITY_NOT_AVAILABLE;
 		return r;
 	}
 
@@ -274,14 +274,14 @@ risposta_meteo_t build_weather_response(char type, const char *city) {
 		case 'w': value = get_wind(); break;
 		case 'p': value = get_pressure(); break;
 		default:
-			// fallback (non dovrebbe accadere se typecheck ha passato)
-			r.stato = 2;
+			// fallback
+			r.status = STATUS_INVALID_REQUEST;
 			return r;
 	}
 
 	// Popolamento struttura in caso di successo
-	r.stato = 0;
-	r.tipo = type;
-	r.valore = value;
+	r.status = STATUS_SUCCESS;
+	r.type = type;
+	r.value = value;
 	return r;
 }
