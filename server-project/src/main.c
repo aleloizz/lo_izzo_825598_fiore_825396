@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include "protocol.h"
 
+// Forward declaration to avoid implicit-int issues when compiling as C99+
+int handleclientconnection(int client_socket);
+
 
 void clearwinsock() {
 #if defined WIN32
@@ -113,7 +116,7 @@ int main(int argc, char *argv[]) {
 		// gestione della connessione con il client
 		printf( "Gestione del client %s\n", inet_ntoa(cad.sin_addr) );
 		handleclientconnection(client_socket);
-	}// fne while loop
+	}// fine while loop
 
 	printf("Server terminato.\n");
 
@@ -125,29 +128,35 @@ int main(int argc, char *argv[]) {
 
 int handleclientconnection(int client_socket) {
 	char buffer[BUFFER_SIZE];
-	int bytes_received;
 
-	// Receive data from the client
-	bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-	if (bytes_received < 0) {
-		errorhandler("Errore nella ricezione dei dati.\n");
-		closesocket(client_socket);
-		return -1;
+	// loop mer messaggi multipli in singola connesione (simple echo protocol)
+	for(;;) {
+		int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+		if (bytes_received < 0) {
+			errorhandler("Errore nella ricezione dei dati.\n");
+			closesocket(client_socket);
+			return -1;
+		}
+		if (bytes_received == 0) { // gracful close by client
+			break;
+		}
+		// Null-terminate for safe printing
+		buffer[bytes_received] = '\0';
+		printf("Ricevuto dal client: %s\n", buffer);
+
+		// eco dei dati ricevuti (gestione invii parziali)
+		int total_sent = 0;
+		while (total_sent < bytes_received) {
+			int s = send(client_socket, buffer + total_sent, bytes_received - total_sent, 0);
+			if (s <= 0) {
+				errorhandler("Errore nell'invio dei dati.\n");
+				closesocket(client_socket);
+				return -1;
+			}
+			total_sent += s;
+		}
 	}
 
-	// Null-terminate the received data
-	buffer[bytes_received] = '\0';
-	printf("Ricevuto dal client: %s\n", buffer);
-
-	// Echo the data back to the client
-	int bytes_sent = send(client_socket, buffer, bytes_received, 0);
-	if (bytes_sent < 0) {
-		errorhandler("Errore nell'invio dei dati.\n");
-		closesocket(client_socket);
-		return -1;
-	}
-
-	// Close the client socket
 	closesocket(client_socket);
 	return 0;
 }
