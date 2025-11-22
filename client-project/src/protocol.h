@@ -9,9 +9,9 @@
 #define PROTOCOL_H_
 
 // Shared application parameters
-#define SERVER_PORT 27015  // Server port (change if needed)
-#define SERVER_IP "127.0.0.1" // Server IP address
-#define BUFFER_SIZE 512    // Buffer size for messages
+#define SERVER_PORT 57015  // Server port (change if needed)
+#define SERVER_IP "192.168.1.105" // Server IP address
+#define BUFFERSIZE 512    // Buffer size for messages
 
 // Function prototypes
 // Add here the signatures of the functions implemented by students
