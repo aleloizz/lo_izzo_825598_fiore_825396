@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include "protocol.h"
 
-#define NO_ERROR 0
 
 void clearwinsock() {
 #if defined WIN32
@@ -122,3 +121,33 @@ int main(int argc, char *argv[]) {
 	clearwinsock();
 	return 0;
 } // main end
+
+
+int handleclientconnection(int client_socket) {
+	char buffer[BUFFER_SIZE];
+	int bytes_received;
+
+	// Receive data from the client
+	bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+	if (bytes_received < 0) {
+		errorhandler("Errore nella ricezione dei dati.\n");
+		closesocket(client_socket);
+		return -1;
+	}
+
+	// Null-terminate the received data
+	buffer[bytes_received] = '\0';
+	printf("Ricevuto dal client: %s\n", buffer);
+
+	// Echo the data back to the client
+	int bytes_sent = send(client_socket, buffer, bytes_received, 0);
+	if (bytes_sent < 0) {
+		errorhandler("Errore nell'invio dei dati.\n");
+		closesocket(client_socket);
+		return -1;
+	}
+
+	// Close the client socket
+	closesocket(client_socket);
+	return 0;
+}
