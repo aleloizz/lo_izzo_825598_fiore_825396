@@ -205,15 +205,25 @@ int main(int argc, char *argv[])
      * carattere non-spazio come il `type` e il resto della stringa come
      * il nome della città. Il nome viene copiato in `city` (size limitata).
      */
-    // Parse request: first non-space char is type, rest is city
+    /*
+     * Parsing della richiesta nel formato "type city".
+     * Richiesta valida: il primo token (prima del primo spazio) deve
+     * essere esattamente un singolo carattere che rappresenta il tipo.
+     * Esempi:
+     *  - "t bari"  -> type='t', city='bari'  (valido)
+     *  - "pippo bari" -> token 'pippo' ha lunghezza>1 -> richiesta non valida
+     */
     const char *p = request;
     while (*p && isspace((unsigned char)*p)) p++;
-    char type = *p;
-    if (type == '\0') {
-        //print_usage(argv[0]);
+    const char *token_start = p;
+    while (*p && !isspace((unsigned char)*p)) p++;
+    size_t token_len = (size_t)(p - token_start);
+    if (token_len != 1) {
+        // Token non valido: stampiamo il messaggio richiesto senza contattare il server
+        printf("Ricevuto risultato dal server ip %s. Richiesta non valida\n", server);
         return 1;
     }
-    p++;
+    char type = token_start[0];
     while (*p && isspace((unsigned char)*p)) p++;
     char city[64];
     memset(city, 0, sizeof(city));
@@ -331,6 +341,9 @@ int main(int argc, char *argv[])
      * italiano (Temperatura, Umidità, Vento, Pressione) con una cifra
      * decimale.
      */
+    // Capitalizza la prima lettera della città per stampa estetica
+    if (city[0]) city[0] = (char)toupper((unsigned char)city[0]);
+
     // Build message per spec
     char message[256];
     if (status == STATUS_SUCCESS) {
