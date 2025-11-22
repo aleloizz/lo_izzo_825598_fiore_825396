@@ -8,12 +8,12 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
-// Shared application parameters (defaults)
-#define DEFAULT_SERVER_PORT 56700
-#define DEFAULT_SERVER_IP "127.0.0.1"
+// Parametri condivisi dell'applicazione (valori di default)
+// Queste definizioni vengono usate sia dal client che dal server
+#define DEFAULT_SERVER_PORT 57015
+#define DEFAULT_SERVER_IP "192.168.1.105"
 #define BUFFERSIZE 512    // Buffer size for messages
 
-// Application protocol structures
 typedef struct {
     char type;        // 't', 'h', 'w', 'p'
     char city[64];    // null-terminated city name
@@ -26,11 +26,12 @@ typedef struct {
 } weather_response_t;
 
 // Status codes
-#define STATUS_SUCCESS 0u
-#define STATUS_CITY_NOT_AVAILABLE 1u
-#define STATUS_INVALID_REQUEST 2u
+#define STATUS_SUCCESS 0
+#define STATUS_CITY_NOT_AVAILABLE 1
+#define STATUS_INVALID_REQUEST 2
 
-// Prototypes for server data generation
+// Prototipi delle funzioni di generazione dati usate dal server
+
 float get_temperature(void); // -10.0 .. 40.0
 float get_humidity(void);    // 20.0 .. 100.0
 float get_wind(void);        // 0.0 .. 100.0
