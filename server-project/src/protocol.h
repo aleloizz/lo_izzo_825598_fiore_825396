@@ -33,5 +33,4 @@ float get_pressure(void);       // Range: 950.0 to 1050.0 hPa
 
 risposta_meteo_t build_weather_response(char type, const char *city);
 
-
 #endif /* PROTOCOL_H_ */

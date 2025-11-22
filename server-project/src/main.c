@@ -24,6 +24,7 @@
 #define QLEN 6 // size of request queue
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "protocol.h"
 #include <time.h>
@@ -142,71 +143,60 @@ int main(int argc, char *argv[]) {
 
 
 int handleclientconnection(int client_socket, const char *client_ip) {
-	char buffer[BUFFER_SIZE];
-
-	// loop mer messaggi multipli in singola connesione (simple echo protocol)
-	while(1) {
-		int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-		if (bytes_received < 0) {
-			errorhandler("Errore nella ricezione dei dati.\n");
+	// Protocollo binario: richiesta fissa 65 byte (1 tipo + 64 città)
+	unsigned char reqbuf[65];
+	size_t needed = sizeof(reqbuf);
+	size_t offset = 0;
+	while (offset < needed) {
+		int r = recv(client_socket, (char*)reqbuf + offset, (int)(needed - offset), 0);
+		if (r <= 0) {
+			errorhandler("Errore nella ricezione della richiesta.\n");
 			closesocket(client_socket);
 			return -1;
 		}
-		if (bytes_received == 0) { // gracful close by client
-			break;
+		offset += r;
+	}
+	char req_type = (char)reqbuf[0];
+	char city[65];
+	memcpy(city, &reqbuf[1], 64);
+	city[64] = '\0'; // Garantisce terminazione
+	// Normalizza city rimuovendo trailing null/spazi
+	int clen = (int)strlen(city);
+	while (clen > 0 && (city[clen-1] == ' ' || city[clen-1] == '\r' || city[clen-1] == '\n' || city[clen-1] == '\t')) {
+		city[clen-1] = '\0';
+		clen--;
+	}
+	printf("Richiesta '%c %s' dal client ip %s\n", req_type ? req_type : '-', city[0] ? city : "(vuota)", client_ip);
+
+	// Validazione e costruzione risposta
+	char type_lower = tolower((unsigned char)req_type);
+	if (!(type_lower == 't' || type_lower == 'h' || type_lower == 'w' || type_lower == 'p')) {
+		type_lower = '\0';
+	}
+	risposta_meteo_t r = build_weather_response(type_lower, city);
+
+	// Serializzazione binaria risposta: 4 byte stato (network), 1 byte tipo, 4 byte float (network bit pattern)
+	unsigned char respbuf[9];
+	uint32_t net_status = htonl(r.stato);
+	memcpy(respbuf, &net_status, 4);
+	respbuf[4] = (r.stato == 0) ? r.tipo : '\0';
+	uint32_t fbits;
+	memcpy(&fbits, &r.valore, sizeof(fbits));
+	fbits = htonl(fbits);
+	memcpy(&respbuf[5], &fbits, 4);
+
+	// Invio completo (gestione invii parziali)
+	size_t remaining = sizeof(respbuf);
+	size_t sent_total = 0;
+	while (remaining > 0) {
+		int s = send(client_socket, (char*)respbuf + sent_total, (int)remaining, 0);
+		if (s <= 0) {
+			errorhandler("Errore nell'invio della risposta.\n");
+			closesocket(client_socket);
+			return -1;
 		}
-		// Null-terminate for safe printing
-		buffer[bytes_received] = '\0';
-		printf("Ricevuto dal client: %s\n", buffer);
-
-		// Parsing prima e seconda parola come type e city
-		char city[64] = "";
-		char *p = buffer;
-		while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
-		char req_type = '\0';
-		if (*p != '\0') {
-			// Trova primo spazio dopo il tipo/città
-			char *space = strchr(p, ' ');
-			if (space) {
-				// Usa sscanf per due token, primo token solo primo char
-				char first[64] = "";
-				char second[64] = "";
-				int matched = sscanf(p, "%63s %63s", first, second);
-				if (matched >= 1 && first[0] != '\0') {
-					req_type = tolower((unsigned char)first[0]);
-				}
-				if (matched >= 2) {
-					strncpy(city, second, sizeof(city)-1);
-					city[sizeof(city)-1] = '\0';
-				}
-			} else {
-				// Formato compatto: primo char = tipo, resto = città
-				req_type = tolower((unsigned char)*p);
-				if (*(p+1) != '\0') {
-					strncpy(city, p+1, sizeof(city)-1);
-					city[sizeof(city)-1] = '\0';
-				}
-			}
-		}
-		printf("Richiesta '%c %s' dal client ip %s\n", req_type ? req_type : '-', city[0] ? city : "(vuota)", client_ip);
-
-
-		// Costruzione e invio della risposta meteo secondo specifica
-		risposta_meteo_t response = build_weather_response(req_type, city);
-
-		// Invio della struttura in un'unica write (gestione invio parziale se necessario)
-		const char *send_ptr = (const char *)&response;
-		int to_send = (int)sizeof(response);
-		int sent = 0;
-		while (sent < to_send) {
-			int s = send(client_socket, send_ptr + sent, to_send - sent, 0);
-			if (s <= 0) {
-				errorhandler("Errore nell'invio della risposta.\n");
-				closesocket(client_socket);
-				return -1;
-			}
-			sent += s;
-		}
+		sent_total += s;
+		remaining -= s;
 	}
 
 	closesocket(client_socket);
