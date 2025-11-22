@@ -160,23 +160,38 @@ int handleclientconnection(int client_socket, const char *client_ip) {
 		printf("Ricevuto dal client: %s\n", buffer);
 
 		// Parsing prima e seconda parola come type e city
-		char type[64] = "(non_definito)";
-		char city[64] = "(non_definita)";
-		// Salta spazi iniziali
+		char city[64] = "";
 		char *p = buffer;
 		while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
-		// Estrae token
-		int matched = sscanf(p, "%63s %63s", type, city);
-		if (matched == 1) { // solo type presente
-			// city già impostata a default
-		} else if (matched == 0) {
-			// lascia i default
+		char req_type = '\0';
+		if (*p != '\0') {
+			// Trova primo spazio dopo il tipo/città
+			char *space = strchr(p, ' ');
+			if (space) {
+				// Usa sscanf per due token, primo token solo primo char
+				char first[64] = "";
+				char second[64] = "";
+				int matched = sscanf(p, "%63s %63s", first, second);
+				if (matched >= 1 && first[0] != '\0') {
+					req_type = tolower((unsigned char)first[0]);
+				}
+				if (matched >= 2) {
+					strncpy(city, second, sizeof(city)-1);
+					city[sizeof(city)-1] = '\0';
+				}
+			} else {
+				// Formato compatto: primo char = tipo, resto = città
+				req_type = tolower((unsigned char)*p);
+				if (*(p+1) != '\0') {
+					strncpy(city, p+1, sizeof(city)-1);
+					city[sizeof(city)-1] = '\0';
+				}
+			}
 		}
-		printf("Richiesta '%s %s' dal client ip %s\n", type, city, client_ip);
+		printf("Richiesta '%c %s' dal client ip %s\n", req_type ? req_type : '-', city[0] ? city : "(vuota)", client_ip);
 
 
 		// Costruzione e invio della risposta meteo secondo specifica
-		char req_type = (type[0] != '\0') ? tolower((unsigned char)type[0]) : '\0';
 		risposta_meteo_t response = build_weather_response(req_type, city);
 
 		// Invio della struttura in un'unica write (gestione invio parziale se necessario)
