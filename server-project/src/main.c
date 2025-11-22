@@ -49,7 +49,12 @@ int main(int argc, char *argv[]) {
 	int my_socket;
 
 	// TODO: Create socket
-	// my_socket = socket(...);
+	my_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (my_socket < 0) {
+		printf("errore nella creazione del socket: %d\n", my_socket);
+		clearwinsock();
+		return -1;
+	}
 
 	// TODO: Configure server address
 	// struct sockaddr_in server_addr;
