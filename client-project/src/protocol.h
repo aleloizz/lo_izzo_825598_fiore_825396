@@ -10,6 +10,7 @@
 
 // Shared application parameters
 #define SERVER_PORT 27015  // Server port (change if needed)
+#define SERVER_IP "127.0.0.1" // Server IP address
 #define BUFFER_SIZE 512    // Buffer size for messages
 
 // Function prototypes

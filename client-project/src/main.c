@@ -26,47 +26,93 @@
 
 #define NO_ERROR 0
 
-void clearwinsock() {
+void errorhandler(char *error_message)
+{
+	printf("%s", error_message);
+}
+
+void clearwinsock()
+{
 #if defined WIN32
 	WSACleanup();
 #endif
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
 	// TODO: Implement client logic
 
 #if defined WIN32
 	// Initialize Winsock
 	WSADATA wsa_data;
-	int result = WSAStartup(MAKEWORD(2,2), &wsa_data);
+	int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
 	if (result != NO_ERROR) {
 		printf("Error at WSAStartup()\n");
 		return 0;
 	}
 #endif
-
+	// Socket creation
 	int my_socket;
+	my_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (my_socket < 0) {
+		errorhandler("socket creation failed.\n");
+		closesocket(my_socket);
+		clearwinsock();
+		return -1;
+	}
 
-	// TODO: Create socket
-	// my_socket = socket(...);
+	// Server address configuration
+	struct sockaddr_in server_addr;
+	memset(&server_addr, 0, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+	server_addr.sin_port = htons(SERVER_PORT);
 
-	// TODO: Configure server address
-	// struct sockaddr_in server_addr;
-	// ...
+	// Connect to server
+	if (connect(my_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+		errorhandler("Failed to connect.\n");
+		closesocket(my_socket);
+		clearwinsock();
+		return 0;
+	}
 
-	// TODO: Connect to server
-	// connect(...);
+	char *input_string = "I'm in your system"; // Stringa da inviare
+	int string_len = strlen(input_string); // Determina la lunghezza
 
 	// TODO: Implement communication logic
-	// send(...);
-	// recv(...);
+	// INVIARE DATI AL SERVER
+	if (send(my_socket, input_string, string_len, 0) != string_len) {
+		errorhandler("send() sent a different number of bytes than expected");
+		closesocket(my_socket);
+		clearwinsock();
+		return -1;
+	}
 
-	// TODO: Close socket
-	// closesocket(my_socket);
+	// RICEVERE DATI DAL SERVER
+	int bytes_rcvd;
+	int total_bytes_rcvd = 0;
+	char buf[BUFFERSIZE]; // buffer for data from the server
+	memset(buf, 0, BUFFERSIZE); // ensures extra bytes contain 0
+	printf("Received: "); // Setup to print the echoed string
 
-	printf("Client terminated.\n");
+	while (total_bytes_rcvd < string_len) {
+		if ((bytes_rcvd = recv(my_socket, buf, BUFFERSIZE - 1, 0)) <= 0) {
+			errorhandler("recv() failed or connection closed prematurely");
+			closesocket(my_socket);
+			clearwinsock();
+			return -1;
+		}
+		total_bytes_rcvd += bytes_rcvd; // Keep tally of total bytes
+	}
+	buf[total_bytes_rcvd] = '\0'; // terminate string
+	printf("%s", buf); // Print the echo buffer
 
+	// CHIUSURA DELLA CONNESSIONE
+	closesocket(my_socket);
 	clearwinsock();
+	printf("Client terminated.\n");
+#if defined WIN32
+	system("pause");
+#endif
 	return 0;
 } // main end
