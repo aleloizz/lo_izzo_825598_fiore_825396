@@ -7,8 +7,9 @@
  * portable across Windows, Linux and macOS.
  */
 
-#if defined WIN32
-#include <winsock.h>
+#if defined(_WIN32)
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
 #include <string.h>
 #include <unistd.h>
@@ -32,7 +33,7 @@
 
 
 void clearwinsock() {
-#if defined WIN32
+#if defined(_WIN32)
 	WSACleanup();
 #endif
 }
@@ -73,7 +74,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 	}
 
-#if defined WIN32
+#if defined(_WIN32)
 	// Initialize Winsock
 	WSADATA wsa_data;
 	int result = WSAStartup(MAKEWORD(2,2), &wsa_data);
@@ -83,8 +84,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 	//creazione della socket
-	int my_socket;
-	my_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	int my_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (my_socket < 0) {
 		errorhandler("errore nella creazione del socket.\n");
@@ -96,7 +96,17 @@ int main(int argc, char *argv[]) {
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(SERVER_PORT);
-	server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+	// Prefer inet_pton for portability; fallback to gethostbyname
+	if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) != 1) {
+		struct hostent *he = gethostbyname(SERVER_IP);
+		if (!he) {
+			errorhandler("risoluzione IP fallita\n");
+			closesocket(my_socket);
+			clearwinsock();
+			return -1;
+		}
+		server_addr.sin_addr = *(struct in_addr*)he->h_addr_list[0];
+	}
 
 	// socket binding
 	if (bind(my_socket, (struct sockaddr*) &server_addr, sizeof(server_addr)) <0) {
