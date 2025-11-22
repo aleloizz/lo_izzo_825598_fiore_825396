@@ -61,3 +61,7 @@ Release/
 
 # macOS files
 .DS_Store
+
+# Compiled binaries
+server-project/server
+client-project/client
