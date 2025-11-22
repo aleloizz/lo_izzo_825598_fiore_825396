@@ -24,8 +24,6 @@
 #include <stdlib.h>
 #include "protocol.h"
 
-#define NO_ERROR 0
-
 void errorhandler(char *error_message)
 {
 	printf("%s", error_message);
