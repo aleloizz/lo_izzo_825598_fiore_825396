@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(SERVER_PORT);
-	server_addr.sin_addr.s_addr = INADDR_ANY;
+	server_addr.sin_addr.s_addr = inet_addr("192.168.1.105");
 
 	// socket binding
 	if (bind(my_socket, (struct sockaddr*) &server_addr, sizeof(server_addr)) <0) {
@@ -111,10 +111,10 @@ int main(int argc, char *argv[]) {
 			clearwinsock();
 			return -1;
 		}
-		// clientSocket is connected to a client
+		// gestione della connessione con il client
 		printf( "Gestione del client %s\n", inet_ntoa(cad.sin_addr) );
 		handleclientconnection(client_socket);
-	}// end of the while loop
+	}// fne while loop
 
 	printf("Server terminato.\n");
 
