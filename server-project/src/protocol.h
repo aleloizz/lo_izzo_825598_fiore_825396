@@ -45,4 +45,6 @@ float get_humidity(void);       // Range: 20.0 .. 100.0 %
 float get_wind(void);           // Range: 0.0 .. 100.0 km/h
 float get_pressure(void);       // Range: 950.0 .. 1050.0 hPa
 
+static int my_inet_pton(int af, const char *src, void *dst);
+
 #endif /* PROTOCOL_H_ */

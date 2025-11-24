@@ -55,6 +55,6 @@ float get_humidity(void);    // 20.0 .. 100.0
 float get_wind(void);        // 0.0 .. 100.0
 float get_pressure(void);    // 950.0 .. 1050.0
 
-int my_inet_pton(int af, const char *src, void *dst);
+
 
 #endif /* PROTOCOL_H_ */

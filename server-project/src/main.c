@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in cad; //structure for the client address
 	int client_socket;      //socket descriptor for the client
 	int client_len;         //the size of the client address
-	printf( "In attesa di connessioni sulla porta %d...\n", SERVER_PORT );
+	printf( "In attesa di connessioni sulla porta %d...\n", port );
 
 	while (1) {
 		client_len = sizeof(cad); //set the size of the client address
