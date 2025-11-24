@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <errno.h>
 
 #if defined _WIN32
 #include <winsock2.h>
@@ -158,6 +159,25 @@ static float ntohf(uint32_t i)
     return f;
 }
 
+/*
+ * validaporta
+ * Verifica che la stringa fornita rappresenti un numero intero
+ * compreso nell'intervallo delle porte valide (1-65535).
+ * Se valida, scrive il valore in `out_port` e restituisce 1.
+ * Altrimenti restituisce 0.
+ */
+static int validaporta(const char *s, int *out_port)
+{
+    char *end;
+    errno = 0;
+    long v = strtol(s, &end, 10);
+    if (errno != 0) return 0;
+    if (*end != '\0') return 0;
+    if (v < 1 || v > 65535) return 0;
+    *out_port = (int)v;
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     const char *server = SERVER_IP; // unified constant from protocol.h
@@ -174,7 +194,11 @@ int main(int argc, char *argv[])
         if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
             server = argv[++i];
         } else if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
-            port = atoi(argv[++i]);
+            ++i;
+            if (!validaporta(argv[i], &port)) {
+                fprintf(stderr, "Porta non valida: %s\n", argv[i]);
+                return 1;
+            }
         } else if (strcmp(argv[i], "-r") == 0 && i + 1 < argc) {
             request = argv[++i];
         } else {
