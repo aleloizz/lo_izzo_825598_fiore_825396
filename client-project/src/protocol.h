@@ -38,13 +38,6 @@ float typecheck(char type);
 char citycheck(const char *city);
 weather_response_t build_weather_response(char type, const char *city);
 
-// Client-side prototypes (not used by server directly, included for symmetry)
-int send_all(int sock, const void *buf, size_t len);
-int recv_all(int sock, void *buf, size_t len);
-float ntohf(uint32_t i);
-int validaporta(const char *s, int *out_port);
-static float ntohf(uint32_t i);
-
 // Cross-platform inet_pton/ntop wrappers
 static int my_inet_pton(int af, const char *src, void *dst);
 static const char *my_inet_ntop(int af, const void *src, char *dst, size_t size);
