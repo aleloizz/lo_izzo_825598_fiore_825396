@@ -9,10 +9,11 @@
 #define PROTOCOL_H_
 
 // Shared application parameters (unified client/server constants)
-#define SERVER_PORT 27015          // Default server port
+#define SERVER_PORT  56700         // Default server port
 #define SERVER_IP   "127.0.0.1"    // Default server IP (override in runtime if needed)
 #define BUFFER_SIZE 512            // Generic buffer size
 #define QUEUE_SIZE  5              // Pending connections queue size (server only)
+#define QLEN 6
 
 // Status codes (shared)
 #define STATUS_SUCCESS            0u

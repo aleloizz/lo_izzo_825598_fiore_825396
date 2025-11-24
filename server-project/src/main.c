@@ -21,15 +21,35 @@
 #define closesocket close
 #endif
 
-#define PROTOPORT 57015 // default protocol port number
-#define QLEN 6 // size of request queue
-
+#include "protocol.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "protocol.h"
+
 #include <time.h>
 #include <ctype.h>
+
+// Wrapper compatibile per inet_pton: su Windows usa inet_addr/gethostbyname,
+// su Linux/macOS chiama direttamente inet_pton.
+static int my_inet_pton(int af, const char *src, void *dst)
+{
+#if defined(_WIN32)
+	if (af != AF_INET) return 0;
+	unsigned long a = inet_addr(src);
+	if (a == INADDR_NONE) {
+		struct hostent *he = gethostbyname(src);
+		if (!he) return 0;
+		memcpy(dst, he->h_addr_list[0], he->h_length);
+		return 1;
+	}
+	struct in_addr in;
+	in.s_addr = a;
+	memcpy(dst, &in, sizeof(in));
+	return 1;
+#else
+	return inet_pton(af, src, dst);
+#endif
+}
 
 
 void clearwinsock() {
@@ -62,16 +82,21 @@ float get_pressure(void) {
 int main(int argc, char *argv[]) {
 
 	srand(time(NULL));
-	int port;
-	if (argc > 1) {
-	port = atoi(argv[1]); // if argument specified convert
-	// argument to binary
+	int port = SERVER_PORT;          // valore di default
+	const char *bind_ip = SERVER_IP; // valore di default
+
+	// Parsing opzionale di -s (IP) e -p (porta)
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-s") == 0 && (i + 1) < argc) {
+			bind_ip = argv[++i];
+		} else if (strcmp(argv[i], "-p") == 0 && (i + 1) < argc) {
+			port = atoi(argv[++i]);
+		}
 	}
-	else
-	port = PROTOPORT; // use default port number
-	if (port < 0) {
-	printf("port number errata %s \n", argv[1]);
-	return 0;
+
+	if (port <= 0 || port > 65535) {
+		printf("Porta non valida: %d\n", port);
+		return 0;
 	}
 
 #if defined(_WIN32)
@@ -91,14 +116,14 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	// assegnazione di una indirizzo alla socket
+	// assegnazione di un indirizzo alla socket
 	struct sockaddr_in server_addr;
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(SERVER_PORT);
-	// Prefer inet_pton for portability; fallback to gethostbyname
-	if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) != 1) {
-		struct hostent *he = gethostbyname(SERVER_IP);
+	server_addr.sin_port = htons(port);
+	// Risoluzione IP con wrapper portabile, fallback a gethostbyname
+	if (my_inet_pton(AF_INET, bind_ip, &server_addr.sin_addr) != 1) {
+		struct hostent *he = gethostbyname(bind_ip);
 		if (!he) {
 			errorhandler("risoluzione IP fallita\n");
 			closesocket(my_socket);

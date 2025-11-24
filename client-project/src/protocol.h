@@ -12,6 +12,7 @@
 #define SERVER_PORT 27015
 #define SERVER_IP   "127.0.0.1"
 #define BUFFER_SIZE 512
+#define QLEN  6
 
 // Status codes (shared)
 #define STATUS_SUCCESS            0u
@@ -42,5 +43,7 @@ float get_temperature(void); // -10.0 .. 40.0
 float get_humidity(void);    // 20.0 .. 100.0
 float get_wind(void);        // 0.0 .. 100.0
 float get_pressure(void);    // 950.0 .. 1050.0
+
+int my_inet_pton(int af, const char *src, void *dst);
 
 #endif /* PROTOCOL_H_ */
