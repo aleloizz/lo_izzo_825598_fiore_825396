@@ -9,7 +9,11 @@
 #define PROTOCOL_H_
 
 // Unified shared constants (mirrors server header)
+<<<<<<< HEAD
 #define SERVER_PORT 56700
+=======
+#define SERVER_PORT 27015
+>>>>>>> 20b52d2bbf48ac5a3c0b23b6edf860eb220f8522
 #define SERVER_IP   "127.0.0.1"
 #define BUFFER_SIZE 512
 
